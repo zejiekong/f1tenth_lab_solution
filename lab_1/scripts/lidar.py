@@ -8,10 +8,10 @@ from std_msgs.msg import Header
 
 class lidar:
     def __init__(self):
-        self.subscriber_topic = None
-        self.publisher_topic_1 = None
-        self.publisher_topic_2 = None
-        self.publisher_topic_3 = None
+        self.subscriber_topic = "scan"
+        self.publisher_topic_1 = "closest_point"
+        self.publisher_topic_2 = "farthest_point"
+        self.publisher_topic_3 = "scan_range"
         self.pub_1 = None
         self.pub_2 = None
         self.pub_3 = None
@@ -40,10 +40,6 @@ class lidar:
 
     def run(self):
         rospy.init_node("lidar",anonymous=True)
-        self.subscriber_topic = rospy.get_param('lab1_sub_topic')
-        self.publisher_topic_1 = rospy.get_param("lab1_pub_topic1")
-        self.publisher_topic_2 = rospy.get_param("lab1_pub_topic2")
-        self.publisher_topic_3 = rospy.get_param("lab1_pub_topic3")
 
         self.pub_1 = rospy.Publisher(self.publisher_topic_1,Float64,queue_size = 0)
         self.pub_2 = rospy.Publisher(self.publisher_topic_2,Float64,queue_size = 0)

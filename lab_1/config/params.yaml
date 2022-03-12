@@ -1,4 +1,0 @@
-lab1_sub_topic: "scan"
-lab1_pub_topic1: "closest_point"
-lab1_pub_topic2 : "farthest_point"
-lab1_pub_topic3 : "scan_range"

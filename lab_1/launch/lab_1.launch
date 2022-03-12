@@ -1,5 +1,4 @@
 <launch>
-  <rosparam command="load" file="$(find lab_1)/config/params.yaml"/>
   <include file="$(find f1tenth_simulator)/launch/simulator.launch"/>
   <node name="lidar" pkg="lab_1" type="lidar.py" output="screen"/>
   <node type="rviz" name="rviz_laser_scan" pkg="rviz" args="-d $(find lab_1)/rviz/laser_scan.rviz" />
