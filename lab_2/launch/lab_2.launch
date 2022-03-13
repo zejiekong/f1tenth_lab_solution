@@ -1,5 +1,5 @@
 <launch>
   <include file="$(find f1tenth_simulator)/launch/simulator.launch"/>
   <rosparam command="load" file="$(find lab_2)/config/params.yaml"/>
-  <node name="safety_node" pkg="lab_2" type="safety_node.py" output="screen" launch-prefix="gnome-terminal --command" />
+  <node name="safety_node" pkg="lab_2" type="safety_node.py"/>
 </launch>
