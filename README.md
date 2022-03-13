@@ -6,7 +6,7 @@
 * git
 
 ## Dependecies
-* official f1tenth simulator -> step 2 in setup
+* official F1Tenth simulator
 
 ## Setup
 
@@ -18,10 +18,14 @@ mkdir src
 catkin_make
 ```
 
-2.) Clone Github repositories and build <br>
+2.) Clone official F1Tenth simulator <br>
 ```
 cd src
 git clone https://github.com/f1tenth/f1tenth_simulator.git
+```
+
+3.) Clone Github repositories and build <br>
+```
 git clone https://github.com/zejiekong/f1tenth_lab_solution.git
 cd ..
 catkin_make
