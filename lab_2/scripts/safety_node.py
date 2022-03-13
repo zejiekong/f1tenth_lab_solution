@@ -40,36 +40,27 @@ class Safety(object):
 
     def scan_callback(self, scan_msg):
         # TODO: calculate TTC
-        angle = 0
-        min_ttc = math.inf
+        angle = scan_msg.angle_min
+        brake = False
         for i in scan_msg.ranges:
-            v_i = self.speed * math.cos(angle)
-            if v_i > 0:
-                ttc = i / v_i
-            else:
-                ttc = math.inf
-            
-            if ttc < min_ttc:
-                min_ttc = ttc
-        
+            if i != math.inf and i != math.nan:
+                v_i = self.speed * math.cos(angle)
+                if v_i > 0:
+                    ttc = i / v_i
+                    if ttc < self.ttc_threshold:
+                        brake = True
+                        brake_msg = AckermannDriveStamped()
+                        header = Header()
+                        header.stamp = rospy.Time.now()
+                        brake_msg.header = header
+                        brake_msg.drive.speed = 0
+                        self.brake_publisher.publish(brake_msg)
+                        break
             angle += scan_msg.angle_increment
 
         # TODO: publish brake message and publish controller bool
         brake_bool_msg = Bool()
-        if min_ttc < self.ttc_threshold:
-            brake_msg = AckermannDriveStamped()
-            header = Header()
-            header.stamp = rospy.Time.now()
-            brake_msg.header = header
-            brake_msg.drive.steering_angle = 0
-            brake_msg.drive.steering_angle_velocity = 0
-            brake_msg.drive.speed = 0
-            brake_msg.drive.acceleration = 0
-            brake_msg.drive.jerk = 0
-            brake_bool_msg.data = True
-            self.brake_publisher.publish(brake_msg)
-        else:
-            brake_bool_msg.data = False
+        brake_bool_msg.data = brake
         self.brake_bool_publisher.publish(brake_bool_msg)
 
     def sub_scan(self):
