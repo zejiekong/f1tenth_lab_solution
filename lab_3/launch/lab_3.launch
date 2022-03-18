@@ -1,0 +1,4 @@
+<launch>
+  <include file="$(find f1tenth_simulator)/launch/simulator.launch"/>
+  #<node name="wall_follow" pkg="lab_3" type="wall_follow.py" />
+</launch>
