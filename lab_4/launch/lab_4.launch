@@ -1,0 +1,4 @@
+<launch>
+  <include file="$(find f1tenth_simulator)/launch/simulator.launch"/>
+  <node name="reactive_gap_follow" pkg="lab_4" type="reactive_gap_follow.py" />
+</launch>
