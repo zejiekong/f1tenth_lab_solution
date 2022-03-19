@@ -15,8 +15,8 @@ class reactive_follow_gap:
         lidarscan_topic = '/scan'
         drive_topic = '/nav'
 
-        self.lidar_sub = None #TODO
-        self.drive_pub = None #TODO
+        self.lidar_sub = rospy.Subscriber(lidarscan_topic,LaserScan,self.lidar_callback) #TODO
+        self.drive_pub = rospy.Publisher(drive_topic,AckermannDriveStamped,queue_size=0) #TODO
     
     def preprocess_lidar(self, ranges):
         """ Preprocess the LiDAR scan array. Expert implementation includes:
@@ -24,6 +24,14 @@ class reactive_follow_gap:
             2.Rejecting high values (eg. > 3m)
         """
         proc_ranges = ranges
+        window_size = 4
+        range_index = 0
+        while range_index < len(ranges):
+            window_sample = proc_ranges[range_index:range_index+window_size]
+            window_mean = np.mean(window_sample)
+            proc_ranges[range_index:range_index+window_size] = [window_mean] * window_size
+            range_index += window_size
+
         return proc_ranges
 
     def find_max_gap(self, free_space_ranges):
@@ -45,14 +53,25 @@ class reactive_follow_gap:
         proc_ranges = self.preprocess_lidar(ranges)
 
         #Find closest point to LiDAR
+        closest_point = proc_ranges.index(min(proc_ranges))
 
         #Eliminate all points inside 'bubble' (set them to zero) 
+        bubble_radius = 2
+        proc_ranges[closest_point-bubble_radius:closest_point + bubble_radius+1] = [0] * bubble_radius * 2
 
         #Find max length gap 
+        self.find_max_gap()
 
         #Find the best point in the gap 
+        self.find_best_point()
 
         #Publish Drive message
+        drive_msg = AckermannDriveStamped()
+        sub_drive_msg = AckermannDrive()
+        sub_drive_msg.steering_angle = angle
+        sub_drive_msg.steering_angle_velocity = angular_velocity
+        sub_drive_msg.speed = velocity
+        drive_msg.drive = sub_drive_msg
 
 def main(args):
     rospy.init_node("FollowGap_node", anonymous=True)
