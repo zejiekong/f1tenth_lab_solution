@@ -37,6 +37,20 @@ class reactive_follow_gap:
     def find_max_gap(self, free_space_ranges):
         """ Return the start index & end index of the max gap in free_space_ranges
         """
+        max_gap_len = 0
+        max_gap_index = 0
+        max_gap_list = []
+        start_index = 0
+        end_index = 0
+        while max_gap_index < len(free_space_ranges):
+            if free_space_ranges[max_gap_index] != 0:
+                max_gap_list.append(free_space_ranges[max_gap_index])
+            else:
+                if len(max_gap_list) > 0:
+                    if len(max_gap_list) > max_gap_len:
+                        max_gap_len = len(max_gap_list)
+                    max_gap_list = []
+            max_gap_index += 1
         return None
     
     def find_best_point(self, start_i, end_i, ranges):
@@ -44,6 +58,7 @@ class reactive_follow_gap:
         Return index of best point in ranges
 	Naive: Choose the furthest point within ranges and go there
         """
+
         return None
 
     def lidar_callback(self, data):
@@ -57,10 +72,11 @@ class reactive_follow_gap:
 
         #Eliminate all points inside 'bubble' (set them to zero) 
         bubble_radius = 2
-        proc_ranges[closest_point-bubble_radius:closest_point + bubble_radius+1] = [0] * bubble_radius * 2
+        free_space_ranges = proc_ranges
+        free_space_ranges[closest_point-bubble_radius:closest_point + bubble_radius+1] = [0] * bubble_radius * 2
 
         #Find max length gap 
-        self.find_max_gap()
+        start_index,end_index = self.find_max_gap(free_space_ranges)
 
         #Find the best point in the gap 
         self.find_best_point()
