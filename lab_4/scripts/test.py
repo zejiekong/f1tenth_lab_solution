@@ -1,5 +1,5 @@
 import numpy as np
 
 test = [1,2,3]
-test2 = test[test.index(2)-2:2] = [0] * 3
-print(test2) 
+test[0:1] = [1] * 2
+print(test)

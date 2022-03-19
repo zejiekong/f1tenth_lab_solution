@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from __future__ import print_function
 import sys
 import math
@@ -23,8 +23,8 @@ class reactive_follow_gap:
             1.Setting each value to the mean over some window
             2.Rejecting high values (eg. > 3m)
         """
-        proc_ranges = ranges
-        window_size = 4
+        proc_ranges = list(ranges)
+        window_size = 20
         range_index = 0
         while range_index < len(ranges):
             window_sample = proc_ranges[range_index:range_index+window_size]
@@ -34,65 +34,81 @@ class reactive_follow_gap:
 
         return proc_ranges
 
-    def find_max_gap(self, free_space_ranges):
+    def find_max_gap(self, free_space_ranges,threshold):
         """ Return the start index & end index of the max gap in free_space_ranges
         """
         max_gap_len = 0
         max_gap_index = 0
         max_gap_list = []
-        start_index = 0
         end_index = 0
         while max_gap_index < len(free_space_ranges):
-            if free_space_ranges[max_gap_index] != 0:
+            if free_space_ranges[max_gap_index] > threshold:
                 max_gap_list.append(free_space_ranges[max_gap_index])
             else:
                 if len(max_gap_list) > 0:
                     if len(max_gap_list) > max_gap_len:
+                        end_index = max_gap_index - 1
                         max_gap_len = len(max_gap_list)
                     max_gap_list = []
             max_gap_index += 1
-        return None
+        if end_index == 0 and max_gap_index == 0:
+            threshold -= 0.5
+            return self.find_max_gap(free_space_ranges,threshold)
+        return end_index - max_gap_len + 1,end_index
     
     def find_best_point(self, start_i, end_i, ranges):
         """Start_i & end_i are start and end indicies of max-gap range, respectively
         Return index of best point in ranges
 	Naive: Choose the furthest point within ranges and go there
         """
-
-        return None
+        best_point = start_i + ranges[start_i:end_i+1].index(max(ranges[start_i:end_i+1]))
+        return best_point
 
     def lidar_callback(self, data):
         """ Process each LiDAR scan as per the Follow Gap algorithm & publish an AckermannDriveStamped Message
         """
-        ranges = data.ranges
+        ranges = list(data.ranges)
+        start_index = int(math.radians(90)/data.angle_increment)
+        end_index = int((math.radians(270)/data.angle_increment))+1
+        ranges = ranges[start_index:end_index]
         proc_ranges = self.preprocess_lidar(ranges)
 
         #Find closest point to LiDAR
         closest_point = proc_ranges.index(min(proc_ranges))
 
         #Eliminate all points inside 'bubble' (set them to zero) 
-        bubble_radius = 2
+        bubble_radius = 10
         free_space_ranges = proc_ranges
         free_space_ranges[closest_point-bubble_radius:closest_point + bubble_radius+1] = [0] * bubble_radius * 2
 
         #Find max length gap 
-        start_index,end_index = self.find_max_gap(free_space_ranges)
+        start_index,end_index = self.find_max_gap(free_space_ranges,4)
+        print(start_index,end_index)
 
         #Find the best point in the gap 
-        self.find_best_point()
+        best_point_index = self.find_best_point(start_index,end_index,free_space_ranges)
 
         #Publish Drive message
+        angle = best_point_index * data.angle_increment
+        angle -= math.pi/2
+        print(angle)
         drive_msg = AckermannDriveStamped()
         sub_drive_msg = AckermannDrive()
         sub_drive_msg.steering_angle = angle
-        sub_drive_msg.steering_angle_velocity = angular_velocity
+        sub_drive_msg.steering_angle_velocity = 5
+        if 0 <= math.degrees(abs(angle)) <= 10:
+            velocity = 0.3
+        elif 10 < math.degrees(abs(angle)) <= 20:
+            velocity = 0.2
+        else:
+            velocity = 0.1
         sub_drive_msg.speed = velocity
         drive_msg.drive = sub_drive_msg
+        self.drive_pub.publish(drive_msg)
 
 def main(args):
     rospy.init_node("FollowGap_node", anonymous=True)
     rfgs = reactive_follow_gap()
-    rospy.sleep(0.1)
     rospy.spin()
 
 if __name__ == '__main__':
