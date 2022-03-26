@@ -31,7 +31,7 @@ class reactive_follow_gap:
             window_mean = np.mean(window_sample)
             proc_ranges[range_index:range_index+window_size] = [window_mean] * window_size
             range_index += window_size
-        proc_ranges = [0 if i > 5 else i for i in proc_ranges]
+        proc_ranges = [0 if i > 10 else i for i in proc_ranges]
         return proc_ranges
 
     def find_max_gap(self, free_space_ranges,threshold):
@@ -61,7 +61,7 @@ class reactive_follow_gap:
         Return index of best point in ranges
 	Naive: Choose the furthest point within ranges and go there
         """
-        best_point = start_i + ranges[start_i:end_i+1].index(max(ranges[start_i:end_i+1]))
+        best_point = start_i + ranges[start_i:end_i+1].index(max(ranges_copy))
         return best_point
 
     def lidar_callback(self, data):
@@ -82,7 +82,7 @@ class reactive_follow_gap:
         free_space_ranges[closest_point-bubble_radius:closest_point + bubble_radius+1] = [0] * bubble_radius * 2
 
         #Find max length gap 
-        start_index,end_index = self.find_max_gap(free_space_ranges,4.5)
+        start_index,end_index = self.find_max_gap(free_space_ranges,3)
         print(start_index,end_index)
 
         #Find the best point in the gap 
@@ -101,7 +101,7 @@ class reactive_follow_gap:
         elif 10 < math.degrees(abs(angle)) <= 20:
             velocity = 0.3
         else:
-            velocity = 0.3
+            velocity = 0.2
         sub_drive_msg.speed = velocity
         drive_msg.drive = sub_drive_msg
         self.drive_pub.publish(drive_msg)
@@ -109,7 +109,6 @@ class reactive_follow_gap:
 def main(args):
     rospy.init_node("FollowGap_node", anonymous=True)
     rfgs = reactive_follow_gap()
-    rospy.sleep(0.1)
     rospy.spin()
 
 if __name__ == '__main__':
