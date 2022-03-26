@@ -61,7 +61,7 @@ class reactive_follow_gap:
         Return index of best point in ranges
 	Naive: Choose the furthest point within ranges and go there
         """
-        best_point = start_i + ranges[start_i:end_i+1].index(max(ranges_copy))
+        best_point = start_i + ranges[start_i:end_i+1].index(max(ranges[start_i:end_i+1]))
         return best_point
 
     def lidar_callback(self, data):
