@@ -24,14 +24,15 @@ class reactive_follow_gap:
             2.Rejecting high values (eg. > 3m)
         """
         proc_ranges = list(ranges)
-        window_size = 20
+        window_size = 10
         range_index = 0
         while range_index < len(ranges):
             window_sample = proc_ranges[range_index:range_index+window_size]
             window_mean = np.mean(window_sample)
             proc_ranges[range_index:range_index+window_size] = [window_mean] * window_size
             range_index += window_size
-        proc_ranges = [0 if i > 10 else i for i in proc_ranges]
+        proc_ranges = [10 if i > 10 else i for i in proc_ranges]
+        proc_ranges = [0 if i < 0.8 else i for i in proc_ranges]
         return proc_ranges
 
     def find_max_gap(self, free_space_ranges,threshold):
@@ -74,20 +75,21 @@ class reactive_follow_gap:
         proc_ranges = self.preprocess_lidar(ranges)
 
         #Find closest point to LiDAR
-        closest_point = proc_ranges.index(min(proc_ranges))
+        closest_point = ranges.index(min(ranges))
 
         #Eliminate all points inside 'bubble' (set them to zero) 
         bubble_radius = 10
         free_space_ranges = proc_ranges
-        free_space_ranges[closest_point-bubble_radius:closest_point + bubble_radius+1] = [0] * bubble_radius * 2
-
+        for i in range(closest_point-bubble_radius,closest_point+bubble_radius):
+            free_space_ranges[i] = 0
+        #free_space_ranges[closest_point-bubble_radius:closest_point + bubble_radius+1] = [0] * bubble_radius * 2
+        z
         #Find max length gap 
         start_index,end_index = self.find_max_gap(free_space_ranges,3)
-        print(start_index,end_index)
 
         #Find the best point in the gap 
-        best_point_index = self.find_best_point(start_index,end_index,free_space_ranges)
-
+        best_point_index = self.find_best_point(start_index,end_index,ranges)
+        print(ranges[best_point_index])
         #Publish Drive message
         angle = best_point_index * data.angle_increment
         angle -= math.pi/2
