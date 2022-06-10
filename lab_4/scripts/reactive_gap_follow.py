@@ -23,94 +23,46 @@ class reactive_follow_gap:
             1.Setting each value to the mean over some window
             2.Rejecting high values (eg. > 3m)
         """
-        proc_ranges = list(ranges)
-        window_size = 10
-        range_index = 0
-        while range_index < len(ranges):
-            window_sample = proc_ranges[range_index:range_index+window_size]
-            window_mean = np.mean(window_sample)
-            proc_ranges[range_index:range_index+window_size] = [window_mean] * window_size
-            range_index += window_size
-        proc_ranges = [10 if i > 10 else i for i in proc_ranges]
-        proc_ranges = [0 if i < 0.8 else i for i in proc_ranges]
+        proc_ranges = ranges
+        proc_ranges = np.convolve(proc_ranges,np.ones(3),'valid') # mean filter
+        proc_ranges = [i if i <= 3 else 0 for i in proc_ranges]
         return proc_ranges
 
-    def find_max_gap(self, free_space_ranges,threshold):
+    def find_max_gap(self, free_space_ranges):
         """ Return the start index & end index of the max gap in free_space_ranges
         """
-        max_gap_len = 0
-        max_gap_index = 0
-        max_gap_list = []
-        end_index = 0
-        while max_gap_index < len(free_space_ranges):
-            if free_space_ranges[max_gap_index] > threshold:
-                max_gap_list.append(free_space_ranges[max_gap_index])
-            else:
-                if len(max_gap_list) > 0:
-                    if len(max_gap_list) > max_gap_len:
-                        end_index = max_gap_index - 1
-                        max_gap_len = len(max_gap_list)
-                    max_gap_list = []
-            max_gap_index += 1
-        if end_index == 0:
-            threshold -= 0.3
-            return self.find_max_gap(free_space_ranges,threshold)
-        return end_index - max_gap_len + 1,end_index
+        return None
     
     def find_best_point(self, start_i, end_i, ranges):
         """Start_i & end_i are start and end indicies of max-gap range, respectively
         Return index of best point in ranges
 	Naive: Choose the furthest point within ranges and go there
         """
-        best_point = start_i + ranges[start_i:end_i+1].index(max(ranges[start_i:end_i+1]))
-        return best_point
+        return None
 
     def lidar_callback(self, data):
         """ Process each LiDAR scan as per the Follow Gap algorithm & publish an AckermannDriveStamped Message
         """
-        ranges = list(data.ranges)
-        start_index = int(math.radians(90)/data.angle_increment)
-        end_index = int((math.radians(270)/data.angle_increment))+1
-        ranges = ranges[start_index:end_index]
+        ranges = data.ranges
         proc_ranges = self.preprocess_lidar(ranges)
-
+        
         #Find closest point to LiDAR
-        closest_point = ranges.index(min(ranges))
+        closest_point = proc_ranges.index(min(proc_ranges))
 
         #Eliminate all points inside 'bubble' (set them to zero) 
-        bubble_radius = 10
-        free_space_ranges = proc_ranges
-        for i in range(closest_point-bubble_radius,closest_point+bubble_radius):
-            free_space_ranges[i] = 0
-        #free_space_ranges[closest_point-bubble_radius:closest_point + bubble_radius+1] = [0] * bubble_radius * 2
-        z
+        radius = 3
+        proc_ranges[closest_point-radius:closest_point+radius+1] = [0]*(1+radius*2) #if out of range?
+        
         #Find max length gap 
-        start_index,end_index = self.find_max_gap(free_space_ranges,3)
 
         #Find the best point in the gap 
-        best_point_index = self.find_best_point(start_index,end_index,ranges)
-        print(ranges[best_point_index])
+
         #Publish Drive message
-        angle = best_point_index * data.angle_increment
-        angle -= math.pi/2
-        print(angle)
-        drive_msg = AckermannDriveStamped()
-        sub_drive_msg = AckermannDrive()
-        sub_drive_msg.steering_angle = angle
-        sub_drive_msg.steering_angle_velocity = 8
-        if 0 <= math.degrees(abs(angle)) <= 10:
-            velocity = 0.4
-        elif 10 < math.degrees(abs(angle)) <= 20:
-            velocity = 0.3
-        else:
-            velocity = 0.2
-        sub_drive_msg.speed = velocity
-        drive_msg.drive = sub_drive_msg
-        self.drive_pub.publish(drive_msg)
 
 def main(args):
     rospy.init_node("FollowGap_node", anonymous=True)
     rfgs = reactive_follow_gap()
+    rospy.sleep(0.1)
     rospy.spin()
 
 if __name__ == '__main__':
